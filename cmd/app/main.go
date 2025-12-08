@@ -7,13 +7,18 @@ import (
 	"os/signal"
 	"syscall"
 
+	"github.com/go-playground/validator/v10"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/recover"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/noredis/subscriptions/internal/application/appservice"
 	"github.com/noredis/subscriptions/internal/common/config"
+	"github.com/noredis/subscriptions/internal/infrastructure/repository"
 	"github.com/noredis/subscriptions/internal/presentation/http/handlers"
 	"github.com/noredis/subscriptions/internal/presentation/http/middlewares"
 	"github.com/noredis/subscriptions/pkg/postgres"
+	"github.com/noredis/subscriptions/pkg/rules"
+	"github.com/noredis/subscriptions/pkg/validatorext"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 )
@@ -66,6 +71,18 @@ func (app *App) Init() error {
 
 	heartbeatHandler := handlers.NewHeartbeatHandler()
 	heartbeatHandler.Register(app.fiberApp)
+
+	validate := validator.New()
+	if err := validate.RegisterValidation("date_format", rules.DateFormat); err != nil {
+		return err
+	}
+
+	validate.RegisterTagNameFunc(validatorext.FieldTag)
+
+	subscriptionRepo := repository.NewSubscriptionRepository(app.db)
+	subscriptionService := appservice.NewSubscriptionService(validate, subscriptionRepo)
+	subscriptionHandler := handlers.NewSubscriptionHandler(subscriptionService, app.logger)
+	subscriptionHandler.Register(app.fiberApp)
 
 	return nil
 }

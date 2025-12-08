@@ -13,8 +13,8 @@ services:
     networks:
       - subs
     depends_on:
-      subs-db:
-        condition: service_healthy
+      subs-migrate:
+        condition: service_completed_successfully
 
   subs-db:
     image: postgres:17-alpine
@@ -33,6 +33,21 @@ services:
       timeout: 3s
       retries: 5
       start_period: 30s
+    networks:
+      - subs
+  
+  subs-migrate:
+    image: migrate/migrate:v4.19.0
+    container_name: subs-migrate
+    entrypoint: [
+      "sh", "-c",
+      "migrate -path=/migrations -database postgres://$DB_USER:$DB_PASSWORD@$DB_HOST:$DB_PORT/$DB_NAME?sslmode=disable up"
+    ]
+    volumes:
+      - ./migrations:/migrations:ro
+    depends_on:
+      subs-db:
+        condition: service_healthy
     networks:
       - subs
 

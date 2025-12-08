@@ -1,4 +1,4 @@
-.PHONY: run brun app-logs lint stop down vdown
+.PHONY: run brun app-logs lint stop down vdown db
 
 run:
 	@docker compose up -d
@@ -20,3 +20,6 @@ down:
 
 vdown:
 	@docker compose down -v
+
+db:
+	@docker exec -it subs-db psql -U postgres -d subs_db
