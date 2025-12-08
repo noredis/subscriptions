@@ -10,6 +10,32 @@ services:
       - .env
     networks:
       - subs
+    depends_on:
+      subs-db:
+        condition: service_healthy
+
+  subs-db:
+    image: postgres:17-alpine
+    container_name: ${DB_HOST}
+    ports:
+      - "${DB_PORT}:${DB_PORT}"
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_USER=${DB_USER}
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+      - POSTGRES_DB=${DB_NAME}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${DB_USER} -d $${DB_NAME}"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+      start_period: 30s
+    networks:
+      - subs
+
+volumes:
+  pg_data:
 
 networks:
   subs:
