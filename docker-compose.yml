@@ -1,0 +1,16 @@
+---
+
+services:
+  subs-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: subs-app
+    env_file:
+      - .env
+    networks:
+      - subs
+
+networks:
+  subs:
+    driver: bridge
