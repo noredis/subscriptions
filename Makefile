@@ -1,4 +1,4 @@
-.PHONY: run brun app-logs lint
+.PHONY: run brun app-logs lint stop down vdown
 
 run:
 	@docker compose up -d
@@ -11,3 +11,12 @@ app-logs:
 
 lint:
 	@golangci-lint run
+
+stop:
+	@docker compose stop
+
+down:
+	@docker compose down
+
+vdown:
+	@docker compose down -v
