@@ -12,6 +12,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/noredis/subscriptions/internal/common/config"
 	"github.com/noredis/subscriptions/internal/presentation/http/handlers"
+	"github.com/noredis/subscriptions/internal/presentation/http/middlewares"
 	"github.com/noredis/subscriptions/pkg/postgres"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
@@ -61,6 +62,7 @@ func (app *App) Init() error {
 	app.fiberApp = fiber.New()
 
 	app.fiberApp.Use(recover.New())
+	app.fiberApp.Use(middlewares.Logging(app.logger))
 
 	heartbeatHandler := handlers.NewHeartbeatHandler()
 	heartbeatHandler.Register(app.fiberApp)
