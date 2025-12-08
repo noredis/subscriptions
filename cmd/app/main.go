@@ -2,9 +2,12 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"os"
 
+	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/recover"
 	"github.com/noredis/subscriptions/internal/common/config"
 	"github.com/noredis/subscriptions/pkg/postgres"
 	"github.com/rs/zerolog"
@@ -25,7 +28,13 @@ func main() {
 	logger.Info().Msg("app successfully connected to db")
 	_ = db
 
-	// http
+	app := fiber.New()
+	app.Use(recover.New())
+	logger.Info().Msgf("app starting on port %d", cfg.App.Port)
+
+	if err := app.Listen(fmt.Sprintf(":%d", cfg.App.Port)); err != nil {
+		logger.Fatal().Err(err).Msg("failed to start app")
+	}
 }
 
 func setupLogger(cfg config.Logger) *zerolog.Logger {

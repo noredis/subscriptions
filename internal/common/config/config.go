@@ -15,7 +15,8 @@ type Config struct {
 }
 
 type App struct {
-	Env string `envconfig:"APP_ENV" default:"dev"`
+	Env  string `envconfig:"APP_ENV" default:"dev"`
+	Port int    `envconfig:"APP_PORT" default:"8080"`
 }
 
 type Logger struct {
