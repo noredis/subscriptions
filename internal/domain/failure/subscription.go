@@ -3,5 +3,5 @@ package failure
 import "errors"
 
 var (
-	ErrSubscriptionAlreadyExists = errors.New("subscription already exists")
+	ErrUserAlreadyHasThisSubscription = errors.New("user already has subscription to this service")
 )

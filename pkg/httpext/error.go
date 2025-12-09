@@ -8,9 +8,18 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
+type FiberError struct {
+	Error  string       `json:"error"`
+	Fields []FieldError `json:"fields,omitempty"`
+}
+
 type FieldError struct {
 	Field       string `json:"field"`
 	Description string `json:"description"`
+}
+
+func Error(c *fiber.Ctx, code int, err string) error {
+	return c.Status(code).JSON(FiberError{Error: err})
 }
 
 func ValidationError(c *fiber.Ctx, vErrs validator.ValidationErrors) error {
@@ -23,7 +32,10 @@ func ValidationError(c *fiber.Ctx, vErrs validator.ValidationErrors) error {
 		})
 	}
 
-	return c.Status(http.StatusUnprocessableEntity).JSON(fieldErrors)
+	return c.Status(http.StatusUnprocessableEntity).JSON(FiberError{
+		Error:  "validation error",
+		Fields: fieldErrors,
+	})
 }
 
 func mapTagToMessage(fErr validator.FieldError) string {

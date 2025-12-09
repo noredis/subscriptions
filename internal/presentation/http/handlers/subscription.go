@@ -48,12 +48,12 @@ func (handler *SubscriptionHandler) CreateSubscription(c *fiber.Ctx) error {
 		case errors.As(err, &vErrs):
 			handler.logger.Info().Err(err).Msg("validation for subscription failed")
 			return httpext.ValidationError(c, vErrs)
-		case errors.Is(err, failure.ErrSubscriptionAlreadyExists):
+		case errors.Is(err, failure.ErrUserAlreadyHasThisSubscription):
 			handler.logger.Info().Err(err).Msg("subscription already exists")
-			return c.SendStatus(http.StatusConflict)
+			return httpext.Error(c, http.StatusConflict, err.Error())
 		default:
 			handler.logger.Error().Err(err).Msg("failed to create subscription")
-			return c.SendStatus(http.StatusInternalServerError)
+			return httpext.Error(c, http.StatusInternalServerError, "internal server error")
 		}
 	}
 

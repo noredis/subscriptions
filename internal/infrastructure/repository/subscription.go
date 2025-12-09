@@ -39,7 +39,7 @@ func (repo *SubscriptionRepository) Insert(
 	if err := repo.db.QueryRow(ctx, query, args...).Scan(&id); err != nil {
 		var pgErr *pgconn.PgError
 		if errors.As(err, &pgErr) && pgErr.Code == "23505" {
-			return nil, failure.ErrSubscriptionAlreadyExists
+			return nil, failure.ErrUserAlreadyHasThisSubscription
 		}
 
 		return nil, err
