@@ -30,12 +30,13 @@ func NewSubscriptionHandler(
 }
 
 func (handler *SubscriptionHandler) Register(app *fiber.App) {
-	app.Post("/subscriptions", handler.CreateSubscription)
-	app.Put("/subscriptions/:id", handler.UpdateSubscription)
-	app.Delete("/subscriptions/:id", handler.DeleteSubscription)
+	app.Post("/subscriptions", handler.Create)
+	app.Put("/subscriptions/:id", handler.Update)
+	app.Delete("/subscriptions/:id", handler.Delete)
+	app.Get("/subscriptions/:id", handler.Index)
 }
 
-func (handler *SubscriptionHandler) CreateSubscription(c *fiber.Ctx) error {
+func (handler *SubscriptionHandler) Create(c *fiber.Ctx) error {
 	req := new(dto.SubscriptionDTO)
 
 	if err := c.BodyParser(req); err != nil {
@@ -43,7 +44,7 @@ func (handler *SubscriptionHandler) CreateSubscription(c *fiber.Ctx) error {
 		return httpext.Error(c, http.StatusBadRequest, "bad request")
 	}
 
-	resp, err := handler.service.CreateSubscription(c.Context(), *req)
+	resp, err := handler.service.Create(c.Context(), *req)
 	if err != nil {
 		return handler.error(c, err)
 	}
@@ -56,7 +57,7 @@ func (handler *SubscriptionHandler) CreateSubscription(c *fiber.Ctx) error {
 	return c.Status(http.StatusCreated).JSON(*resp)
 }
 
-func (handler *SubscriptionHandler) UpdateSubscription(c *fiber.Ctx) error {
+func (handler *SubscriptionHandler) Update(c *fiber.Ctx) error {
 	req := new(dto.SubscriptionDTO)
 
 	if err := c.BodyParser(req); err != nil {
@@ -70,7 +71,7 @@ func (handler *SubscriptionHandler) UpdateSubscription(c *fiber.Ctx) error {
 		return httpext.Error(c, http.StatusBadRequest, "bad request")
 	}
 
-	resp, err := handler.service.UpdateSubscription(c.Context(), *req, id)
+	resp, err := handler.service.Update(c.Context(), *req, id)
 	if err != nil {
 		return handler.error(c, err)
 	}
@@ -83,14 +84,14 @@ func (handler *SubscriptionHandler) UpdateSubscription(c *fiber.Ctx) error {
 	return c.Status(http.StatusOK).JSON(*resp)
 }
 
-func (handler *SubscriptionHandler) DeleteSubscription(c *fiber.Ctx) error {
+func (handler *SubscriptionHandler) Delete(c *fiber.Ctx) error {
 	idParam := c.Params("id")
 	id, err := strconv.Atoi(idParam)
 	if err != nil {
 		return httpext.Error(c, http.StatusBadRequest, "bad request")
 	}
 
-	err = handler.service.DeleteSubscription(c.Context(), id)
+	err = handler.service.Delete(c.Context(), id)
 	if err != nil {
 		return handler.error(c, err)
 	}
@@ -99,6 +100,21 @@ func (handler *SubscriptionHandler) DeleteSubscription(c *fiber.Ctx) error {
 		Int("id", id).
 		Msg("subscription deleted")
 	return c.SendStatus(http.StatusNoContent)
+}
+
+func (handler *SubscriptionHandler) Index(c *fiber.Ctx) error {
+	idParam := c.Params("id")
+	id, err := strconv.Atoi(idParam)
+	if err != nil {
+		return httpext.Error(c, http.StatusBadRequest, "bad request")
+	}
+
+	resp, err := handler.service.Index(c.Context(), id)
+	if err != nil {
+		return handler.error(c, err)
+	}
+
+	return c.Status(http.StatusOK).JSON(*resp)
 }
 
 func (handler *SubscriptionHandler) error(c *fiber.Ctx, err error) error {

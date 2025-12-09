@@ -25,7 +25,7 @@ func NewSubscriptionService(
 	}
 }
 
-func (service *SubscriptionService) CreateSubscription(
+func (service *SubscriptionService) Create(
 	ctx context.Context,
 	req dto.SubscriptionDTO,
 ) (*dto.SubscriptionDTO, error) {
@@ -43,7 +43,7 @@ func (service *SubscriptionService) CreateSubscription(
 	return service.mapFromEntity(sub), nil
 }
 
-func (service *SubscriptionService) UpdateSubscription(
+func (service *SubscriptionService) Update(
 	ctx context.Context,
 	req dto.SubscriptionDTO,
 	id int,
@@ -72,10 +72,7 @@ func (service *SubscriptionService) UpdateSubscription(
 	return service.mapFromEntity(sub), nil
 }
 
-func (service *SubscriptionService) DeleteSubscription(
-	ctx context.Context,
-	id int,
-) error {
+func (service *SubscriptionService) Delete(ctx context.Context, id int) error {
 	exists, err := service.repo.ExistsByID(ctx, id)
 	if err != nil {
 		return err
@@ -85,6 +82,18 @@ func (service *SubscriptionService) DeleteSubscription(
 	}
 
 	return service.repo.Delete(ctx, id)
+}
+
+func (service *SubscriptionService) Index(
+	ctx context.Context,
+	id int,
+) (*dto.SubscriptionDTO, error) {
+	sub, err := service.repo.FindByID(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+
+	return service.mapFromEntity(sub), nil
 }
 
 func (service *SubscriptionService) mapToEntity(

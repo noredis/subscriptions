@@ -120,3 +120,30 @@ func (repo *SubscriptionRepository) ExistsByID(
 	}
 	return true, nil
 }
+
+func (repo *SubscriptionRepository) FindByID(
+	ctx context.Context,
+	id int,
+) (*entity.Subscription, error) {
+	query, args, err := squirrel.StatementBuilder.
+		PlaceholderFormat(squirrel.Dollar).
+		Select("id", "service_name", "price", "user_id", "start_date", "end_date").
+		From("subscriptions").
+		Where(squirrel.Eq{"id": id}).
+		Limit(1).
+		ToSql()
+	if err != nil {
+		return nil, err
+	}
+
+	var sub entity.Subscription
+	err = repo.db.QueryRow(ctx, query, args...).
+		Scan(&sub.ID, &sub.ServiceName, &sub.Price, &sub.UserID, &sub.StartDate, &sub.EndDate)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, failure.ErrSubscriptionNotFound
+		}
+		return nil, err
+	}
+	return &sub, nil
+}
