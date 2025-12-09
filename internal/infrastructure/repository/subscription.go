@@ -80,6 +80,22 @@ func (repo *SubscriptionRepository) Update(
 	return sub, nil
 }
 
+func (repo *SubscriptionRepository) Delete(ctx context.Context, id int) error {
+	query, args, err := squirrel.StatementBuilder.
+		PlaceholderFormat(squirrel.Dollar).
+		Delete("subscriptions").
+		Where(squirrel.Eq{"id": id}).
+		ToSql()
+	if err != nil {
+		return err
+	}
+
+	if _, err := repo.db.Exec(ctx, query, args...); err != nil {
+		return err
+	}
+	return nil
+}
+
 func (repo *SubscriptionRepository) ExistsByID(
 	ctx context.Context,
 	id int,

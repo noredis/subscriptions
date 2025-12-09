@@ -32,6 +32,7 @@ func NewSubscriptionHandler(
 func (handler *SubscriptionHandler) Register(app *fiber.App) {
 	app.Post("/subscriptions", handler.CreateSubscription)
 	app.Put("/subscriptions/:id", handler.UpdateSubscription)
+	app.Delete("/subscriptions/:id", handler.DeleteSubscription)
 }
 
 func (handler *SubscriptionHandler) CreateSubscription(c *fiber.Ctx) error {
@@ -80,6 +81,24 @@ func (handler *SubscriptionHandler) UpdateSubscription(c *fiber.Ctx) error {
 		Str("user_id", resp.UserID).
 		Msg("subscription updated")
 	return c.Status(http.StatusOK).JSON(*resp)
+}
+
+func (handler *SubscriptionHandler) DeleteSubscription(c *fiber.Ctx) error {
+	idParam := c.Params("id")
+	id, err := strconv.Atoi(idParam)
+	if err != nil {
+		return httpext.Error(c, http.StatusBadRequest, "bad request")
+	}
+
+	err = handler.service.DeleteSubscription(c.Context(), id)
+	if err != nil {
+		return handler.error(c, err)
+	}
+
+	handler.logger.Info().
+		Int("id", id).
+		Msg("subscription deleted")
+	return c.SendStatus(http.StatusNoContent)
 }
 
 func (handler *SubscriptionHandler) error(c *fiber.Ctx, err error) error {

@@ -72,6 +72,21 @@ func (service *SubscriptionService) UpdateSubscription(
 	return service.mapFromEntity(sub), nil
 }
 
+func (service *SubscriptionService) DeleteSubscription(
+	ctx context.Context,
+	id int,
+) error {
+	exists, err := service.repo.ExistsByID(ctx, id)
+	if err != nil {
+		return err
+	}
+	if !exists {
+		return failure.ErrSubscriptionNotFound
+	}
+
+	return service.repo.Delete(ctx, id)
+}
+
 func (service *SubscriptionService) mapToEntity(
 	sub dto.SubscriptionDTO,
 ) *entity.Subscription {
