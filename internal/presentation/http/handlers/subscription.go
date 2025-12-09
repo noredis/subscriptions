@@ -34,6 +34,7 @@ func (handler *SubscriptionHandler) Register(app *fiber.App) {
 	app.Put("/subscriptions/:id", handler.Update)
 	app.Delete("/subscriptions/:id", handler.Delete)
 	app.Get("/subscriptions/:id", handler.Index)
+	app.Get("/subscriptions", handler.List)
 }
 
 func (handler *SubscriptionHandler) Create(c *fiber.Ctx) error {
@@ -115,6 +116,32 @@ func (handler *SubscriptionHandler) Index(c *fiber.Ctx) error {
 	}
 
 	return c.Status(http.StatusOK).JSON(*resp)
+}
+
+func (handler *SubscriptionHandler) List(c *fiber.Ctx) error {
+	page := c.QueryInt("page", 1)
+	limit := c.QueryInt("limit", 20)
+
+	filters := dto.SubscriptionFilterDTO{
+		Page:        page,
+		Limit:       limit,
+		ServiceName: c.Query("service_name"),
+		UserID:      c.Query("user_id"),
+		StartDate:   c.Query("start_date"),
+		EndDate:     c.Query("end_date"),
+	}
+
+	subscriptions, total, err := handler.service.List(c.Context(), filters)
+	if err != nil {
+		return handler.error(c, err)
+	}
+
+	return c.Status(http.StatusOK).JSON(fiber.Map{
+		"page":  filters.Page,
+		"limit": filters.Limit,
+		"total": total,
+		"data":  subscriptions,
+	})
 }
 
 func (handler *SubscriptionHandler) error(c *fiber.Ctx, err error) error {

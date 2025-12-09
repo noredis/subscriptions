@@ -11,6 +11,7 @@ import (
 	"github.com/noredis/subscriptions/internal/domain/entity"
 	"github.com/noredis/subscriptions/internal/domain/failure"
 	"github.com/noredis/subscriptions/internal/domain/interfaces"
+	"github.com/rs/zerolog/log"
 )
 
 type SubscriptionRepository struct {
@@ -125,10 +126,7 @@ func (repo *SubscriptionRepository) FindByID(
 	ctx context.Context,
 	id int,
 ) (*entity.Subscription, error) {
-	query, args, err := squirrel.StatementBuilder.
-		PlaceholderFormat(squirrel.Dollar).
-		Select("id", "service_name", "price", "user_id", "start_date", "end_date").
-		From("subscriptions").
+	query, args, err := repo.getQuery().
 		Where(squirrel.Eq{"id": id}).
 		Limit(1).
 		ToSql()
@@ -146,4 +144,95 @@ func (repo *SubscriptionRepository) FindByID(
 		return nil, err
 	}
 	return &sub, nil
+}
+
+func (repo *SubscriptionRepository) Find(
+	ctx context.Context,
+	f *entity.SubscriptionFilter,
+) ([]*entity.Subscription, error) {
+	subscriptions := make([]*entity.Subscription, 0)
+
+	qb := repo.getQuery()
+	qb = repo.filterHelper(qb, f)
+
+	offset := (f.Page - 1) * f.Limit
+	qb = qb.Limit(uint64(f.Limit)).Offset(uint64(offset))
+
+	query, args, err := qb.ToSql()
+	if err != nil {
+		return nil, err
+	}
+
+	log.Print(query)
+	log.Print(args)
+
+	rows, err := repo.db.Query(ctx, query, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var sub entity.Subscription
+		err := rows.
+			Scan(&sub.ID, &sub.ServiceName, &sub.Price, &sub.UserID, &sub.StartDate, &sub.EndDate)
+		if err != nil {
+			return nil, err
+		}
+		subscriptions = append(subscriptions, &sub)
+	}
+
+	return subscriptions, nil
+}
+
+func (repo *SubscriptionRepository) Total(
+	ctx context.Context,
+	f *entity.SubscriptionFilter,
+) (int, error) {
+	cb := squirrel.StatementBuilder.
+		PlaceholderFormat(squirrel.Dollar).
+		Select("COUNT(*)").
+		From("subscriptions")
+	cb = repo.filterHelper(cb, f)
+
+	query, args, err := cb.ToSql()
+	if err != nil {
+		return 0, err
+	}
+
+	var total int
+	if err := repo.db.QueryRow(ctx, query, args...).Scan(&total); err != nil {
+		return 0, err
+	}
+	return total, err
+}
+
+func (repo *SubscriptionRepository) filterHelper(
+	sb squirrel.SelectBuilder,
+	f *entity.SubscriptionFilter,
+) squirrel.SelectBuilder {
+	if f.ServiceName != "" {
+		sb = sb.Where(squirrel.Eq{"service_name": f.ServiceName})
+	}
+
+	if f.UserID != "" {
+		sb = sb.Where(squirrel.Eq{"user_id": f.UserID})
+	}
+
+	if f.StartDate != nil {
+		sb = sb.Where(squirrel.GtOrEq{"start_date": f.StartDate})
+	}
+
+	if f.EndDate != nil {
+		sb = sb.Where(squirrel.LtOrEq{"end_date": f.EndDate})
+	}
+
+	return sb
+}
+
+func (repo *SubscriptionRepository) getQuery() squirrel.SelectBuilder {
+	return squirrel.StatementBuilder.
+		PlaceholderFormat(squirrel.Dollar).
+		Select("id", "service_name", "price", "user_id", "start_date", "end_date").
+		From("subscriptions")
 }

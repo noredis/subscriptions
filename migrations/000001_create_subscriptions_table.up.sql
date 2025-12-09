@@ -3,7 +3,7 @@ CREATE TABLE IF NOT EXISTS subscriptions(
     service_name TEXT NOT NULL,
     price INTEGER NOT NULL,
     user_id UUID NOT NULL,
-    start_date TEXT NOT NULL,
-    end_date TEXT,
+    start_date DATE NOT NULL,
+    end_date DATE,
     UNIQUE (service_name, user_id)
 );

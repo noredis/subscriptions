@@ -8,3 +8,12 @@ type SubscriptionDTO struct {
 	StartDate   string `json:"start_date" validate:"required,date_format"`
 	EndDate     string `json:"end_date,omitempty" validate:"date_format"`
 }
+
+type SubscriptionFilterDTO struct {
+	Page        int `validate:"gte=1"`
+	Limit       int `validate:"gte=1"`
+	ServiceName string
+	UserID      string
+	StartDate   string `validate:"date_format"`
+	EndDate     string `validate:"date_format"`
+}
