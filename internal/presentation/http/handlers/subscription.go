@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"errors"
+	"fmt"
 	"net/http"
 	"strconv"
 
@@ -55,6 +56,7 @@ func (handler *SubscriptionHandler) Create(c *fiber.Ctx) error {
 		Str("service_name", resp.ServiceName).
 		Str("user_id", resp.UserID).
 		Msg("subscription created")
+	c.Location(fmt.Sprintf("/subscriptions/%d", resp.ID))
 	return c.Status(http.StatusCreated).JSON(*resp)
 }
 
