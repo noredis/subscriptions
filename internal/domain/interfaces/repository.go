@@ -13,5 +13,6 @@ type SubscriptionRepository interface {
 	ExistsByID(ctx context.Context, id int) (bool, error)
 	FindByID(ctx context.Context, id int) (*entity.Subscription, error)
 	Find(ctx context.Context, f *entity.SubscriptionFilter) ([]*entity.Subscription, error)
+	FindAll(ctx context.Context, f *entity.SubscriptionFilter) ([]*entity.Subscription, error)
 	Total(ctx context.Context, f *entity.SubscriptionFilter) (int, error)
 }

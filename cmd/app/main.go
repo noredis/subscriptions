@@ -83,6 +83,11 @@ func (app *App) Init() error {
 	subscriptionService := appservice.NewSubscriptionService(validate, subscriptionRepo)
 	subscriptionHandler := handlers.NewSubscriptionHandler(subscriptionService, app.logger)
 	subscriptionHandler.Register(app.fiberApp)
+	log.Printf("VALIDATOR BEFORE: %#v\n", validate)
+
+	costService := appservice.NewCostService(validate, subscriptionRepo)
+	costHandler := handlers.NewCostHandler(app.logger, costService)
+	costHandler.Register(app.fiberApp)
 
 	return nil
 }

@@ -47,7 +47,7 @@ func (handler *SubscriptionHandler) Create(c *fiber.Ctx) error {
 
 	resp, err := handler.service.Create(c.Context(), *req)
 	if err != nil {
-		return handler.error(c, err)
+		return handler.error(c, err, "failed to create subscription")
 	}
 
 	handler.logger.Info().
@@ -74,7 +74,7 @@ func (handler *SubscriptionHandler) Update(c *fiber.Ctx) error {
 
 	resp, err := handler.service.Update(c.Context(), *req, id)
 	if err != nil {
-		return handler.error(c, err)
+		return handler.error(c, err, "failed to update subscription")
 	}
 
 	handler.logger.Info().
@@ -94,7 +94,7 @@ func (handler *SubscriptionHandler) Delete(c *fiber.Ctx) error {
 
 	err = handler.service.Delete(c.Context(), id)
 	if err != nil {
-		return handler.error(c, err)
+		return handler.error(c, err, "failed to delete subscription")
 	}
 
 	handler.logger.Info().
@@ -112,7 +112,7 @@ func (handler *SubscriptionHandler) Index(c *fiber.Ctx) error {
 
 	resp, err := handler.service.Index(c.Context(), id)
 	if err != nil {
-		return handler.error(c, err)
+		return handler.error(c, err, "failed to index subscription")
 	}
 
 	return c.Status(http.StatusOK).JSON(*resp)
@@ -133,7 +133,7 @@ func (handler *SubscriptionHandler) List(c *fiber.Ctx) error {
 
 	subscriptions, total, err := handler.service.List(c.Context(), filters)
 	if err != nil {
-		return handler.error(c, err)
+		return handler.error(c, err, "failed to list subscriptions")
 	}
 
 	return c.Status(http.StatusOK).JSON(fiber.Map{
@@ -144,7 +144,7 @@ func (handler *SubscriptionHandler) List(c *fiber.Ctx) error {
 	})
 }
 
-func (handler *SubscriptionHandler) error(c *fiber.Ctx, err error) error {
+func (handler *SubscriptionHandler) error(c *fiber.Ctx, err error, err500msg string) error {
 	var vErrs validator.ValidationErrors
 
 	switch {
@@ -158,7 +158,7 @@ func (handler *SubscriptionHandler) error(c *fiber.Ctx, err error) error {
 		handler.logger.Info().Err(err).Msg("subscription not found")
 		return httpext.Error(c, http.StatusNotFound, err.Error())
 	default:
-		handler.logger.Error().Err(err).Msg("failed to create subscription")
+		handler.logger.Error().Err(err).Msg(err500msg)
 		return httpext.Error(c, http.StatusInternalServerError, "internal server error")
 	}
 }

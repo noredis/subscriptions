@@ -11,7 +11,6 @@ import (
 	"github.com/noredis/subscriptions/internal/domain/entity"
 	"github.com/noredis/subscriptions/internal/domain/failure"
 	"github.com/noredis/subscriptions/internal/domain/interfaces"
-	"github.com/rs/zerolog/log"
 )
 
 type SubscriptionRepository struct {
@@ -163,8 +162,38 @@ func (repo *SubscriptionRepository) Find(
 		return nil, err
 	}
 
-	log.Print(query)
-	log.Print(args)
+	rows, err := repo.db.Query(ctx, query, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var sub entity.Subscription
+		err := rows.
+			Scan(&sub.ID, &sub.ServiceName, &sub.Price, &sub.UserID, &sub.StartDate, &sub.EndDate)
+		if err != nil {
+			return nil, err
+		}
+		subscriptions = append(subscriptions, &sub)
+	}
+
+	return subscriptions, nil
+}
+
+func (repo *SubscriptionRepository) FindAll(
+	ctx context.Context,
+	f *entity.SubscriptionFilter,
+) ([]*entity.Subscription, error) {
+	subscriptions := make([]*entity.Subscription, 0)
+
+	qb := repo.getQuery()
+	qb = repo.filterHelper(qb, f)
+
+	query, args, err := qb.ToSql()
+	if err != nil {
+		return nil, err
+	}
 
 	rows, err := repo.db.Query(ctx, query, args...)
 	if err != nil {
@@ -220,11 +249,16 @@ func (repo *SubscriptionRepository) filterHelper(
 	}
 
 	if f.StartDate != nil {
-		sb = sb.Where(squirrel.GtOrEq{"start_date": f.StartDate})
+		sb = sb.Where(
+			squirrel.Or{
+				squirrel.GtOrEq{"end_date": f.StartDate},
+				squirrel.Expr("end_date IS NULL"),
+			},
+		)
 	}
 
 	if f.EndDate != nil {
-		sb = sb.Where(squirrel.LtOrEq{"end_date": f.EndDate})
+		sb = sb.Where(squirrel.LtOrEq{"start_date": f.EndDate})
 	}
 
 	return sb
