@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 
 	"github.com/Masterminds/squirrel"
@@ -47,4 +48,59 @@ func (repo *SubscriptionRepository) Insert(
 
 	sub.ID = id
 	return sub, nil
+}
+
+func (repo *SubscriptionRepository) Update(
+	ctx context.Context,
+	sub *entity.Subscription,
+) (*entity.Subscription, error) {
+	query, args, err := squirrel.StatementBuilder.
+		PlaceholderFormat(squirrel.Dollar).
+		Update("subscriptions").
+		Set("service_name", sub.ServiceName).
+		Set("price", sub.Price).
+		Set("user_id", sub.UserID).
+		Set("start_date", sub.StartDate).
+		Set("end_date", sub.EndDate).
+		Where(squirrel.Eq{"id": sub.ID}).
+		ToSql()
+	if err != nil {
+		return nil, err
+	}
+
+	if _, err := repo.db.Exec(ctx, query, args...); err != nil {
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) && pgErr.Code == "23505" {
+			return nil, failure.ErrUserAlreadyHasThisSubscription
+		}
+
+		return nil, err
+	}
+
+	return sub, nil
+}
+
+func (repo *SubscriptionRepository) ExistsByID(
+	ctx context.Context,
+	id int,
+) (bool, error) {
+	query, args, err := squirrel.StatementBuilder.
+		PlaceholderFormat(squirrel.Dollar).
+		Select("1").
+		From("subscriptions").
+		Where(squirrel.Eq{"id": id}).
+		Limit(1).
+		ToSql()
+	if err != nil {
+		return false, err
+	}
+
+	var dummy int
+	if err := repo.db.QueryRow(ctx, query, args...).Scan(&dummy); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return false, nil
+		}
+		return false, err
+	}
+	return true, nil
 }

@@ -6,6 +6,7 @@ import (
 	"github.com/go-playground/validator/v10"
 	"github.com/noredis/subscriptions/internal/application/dto"
 	"github.com/noredis/subscriptions/internal/domain/entity"
+	"github.com/noredis/subscriptions/internal/domain/failure"
 	"github.com/noredis/subscriptions/internal/domain/interfaces"
 )
 
@@ -32,9 +33,38 @@ func (service *SubscriptionService) CreateSubscription(
 		return nil, err
 	}
 
-	subscription := service.mapToEntity(req)
+	sub := service.mapToEntity(req)
 
-	sub, err := service.repo.Insert(ctx, subscription)
+	sub, err := service.repo.Insert(ctx, sub)
+	if err != nil {
+		return nil, err
+	}
+
+	return service.mapFromEntity(sub), nil
+}
+
+func (service *SubscriptionService) UpdateSubscription(
+	ctx context.Context,
+	req dto.SubscriptionDTO,
+	id int,
+) (*dto.SubscriptionDTO, error) {
+	if err := service.validate.Struct(req); err != nil {
+		return nil, err
+	}
+
+	sub := service.mapToEntity(req)
+
+	exists, err := service.repo.ExistsByID(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	if !exists {
+		return nil, failure.ErrSubscriptionNotFound
+	}
+
+	sub.ID = id
+
+	sub, err = service.repo.Update(ctx, sub)
 	if err != nil {
 		return nil, err
 	}
