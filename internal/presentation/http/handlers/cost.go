@@ -31,6 +31,21 @@ func (handler *CostHandler) Register(app *fiber.App) {
 	app.Get("/costs/total", handler.Total)
 }
 
+// Total возвращает суммарную стоимость подписок.
+//
+// @Summary      Получить суммарную стоимость подписок
+// @Description  Возвращает общую стоимость подписок с учётом фильтров.
+// @Tags         cost
+// @Produce      json
+// @Param        service_name  query     string  false  "Фильтр по имени сервиса"
+// @Param        user_id       query     string  false  "Фильтр по ID пользователя"
+// @Param        start_date    query     string  false  "Дата начала (MM-YYYY)"
+// @Param        end_date      query     string  false  "Дата окончания (MM-YYYY)"
+// @Success      200  {object}  dto.TotalCostResponse  "Суммарная стоимость"
+// @Failure      400  {object}  httpext.FiberError     "Некорректный запрос"
+// @Failure      422  {object}  httpext.FiberError     "Ошибка валидации"
+// @Failure      500  {object}  httpext.FiberError     "Внутренняя ошибка сервера"
+// @Router       /cost/total [get]
 func (handler *CostHandler) Total(c *fiber.Ctx) error {
 	filters := dto.CostFilterDTO{
 		ServiceName: c.Query("service_name"),
@@ -44,9 +59,7 @@ func (handler *CostHandler) Total(c *fiber.Ctx) error {
 		return handler.error(c, err)
 	}
 
-	return c.Status(http.StatusOK).JSON(fiber.Map{
-		"total_cost": cost,
-	})
+	return c.Status(http.StatusOK).JSON(*cost)
 }
 
 func (handler *CostHandler) error(c *fiber.Ctx, err error) error {

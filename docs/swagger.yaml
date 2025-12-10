@@ -1,0 +1,315 @@
+definitions:
+  dto.SubscriptionListResponse:
+    properties:
+      data:
+        items:
+          $ref: '#/definitions/dto.SubscriptionResponse'
+        type: array
+      limit:
+        type: integer
+      page:
+        type: integer
+      total:
+        type: integer
+    type: object
+  dto.SubscriptionRequest:
+    properties:
+      end_date:
+        type: string
+      price:
+        minimum: 0
+        type: integer
+      service_name:
+        type: string
+      start_date:
+        type: string
+      user_id:
+        type: string
+    required:
+    - service_name
+    - start_date
+    - user_id
+    type: object
+  dto.SubscriptionResponse:
+    properties:
+      end_date:
+        type: string
+      id:
+        type: integer
+      price:
+        type: integer
+      service_name:
+        type: string
+      start_date:
+        type: string
+      user_id:
+        type: string
+    type: object
+  dto.TotalCostResponse:
+    properties:
+      total_cost:
+        type: integer
+    type: object
+  httpext.FiberError:
+    properties:
+      error:
+        type: string
+      fields:
+        items:
+          $ref: '#/definitions/httpext.FieldError'
+        type: array
+    type: object
+  httpext.FieldError:
+    properties:
+      description:
+        type: string
+      field:
+        type: string
+    type: object
+info:
+  contact: {}
+paths:
+  /cost/total:
+    get:
+      description: Возвращает общую стоимость подписок с учётом фильтров.
+      parameters:
+      - description: Фильтр по имени сервиса
+        in: query
+        name: service_name
+        type: string
+      - description: Фильтр по ID пользователя
+        in: query
+        name: user_id
+        type: string
+      - description: Дата начала (MM-YYYY)
+        in: query
+        name: start_date
+        type: string
+      - description: Дата окончания (MM-YYYY)
+        in: query
+        name: end_date
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Суммарная стоимость
+          schema:
+            $ref: '#/definitions/dto.TotalCostResponse'
+        "400":
+          description: Некорректный запрос
+          schema:
+            $ref: '#/definitions/httpext.FiberError'
+        "422":
+          description: Ошибка валидации
+          schema:
+            $ref: '#/definitions/httpext.FiberError'
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            $ref: '#/definitions/httpext.FiberError'
+      summary: Получить суммарную стоимость подписок
+      tags:
+      - cost
+  /heartbeat:
+    get:
+      description: Возвращает 200 OK, если сервис работает.
+      responses:
+        "200":
+          description: Сервис доступен
+      summary: Проверка доступности
+      tags:
+      - health
+  /subscriptions:
+    get:
+      description: Возвращает список подписок с поддержкой пагинации и фильтрации.
+      parameters:
+      - default: 1
+        description: Номер страницы
+        in: query
+        name: page
+        type: integer
+      - default: 20
+        description: Количество элементов
+        in: query
+        name: limit
+        type: integer
+      - description: Фильтр по имени сервиса
+        in: query
+        name: service_name
+        type: string
+      - description: Фильтр по ID пользователя
+        in: query
+        name: user_id
+        type: string
+      - description: Фильтр по дате начала (MM-YYYY)
+        in: query
+        name: start_date
+        type: string
+      - description: Фильтр по дате окончания (MM-YYYY)
+        in: query
+        name: end_date
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Список подписок
+          schema:
+            $ref: '#/definitions/dto.SubscriptionListResponse'
+        "400":
+          description: Некорректный запрос
+          schema:
+            $ref: '#/definitions/httpext.FiberError'
+        "422":
+          description: Ошибка валидации
+          schema:
+            $ref: '#/definitions/httpext.FiberError'
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            $ref: '#/definitions/httpext.FiberError'
+      summary: Получить список подписок
+      tags:
+      - subscriptions
+    post:
+      consumes:
+      - application/json
+      description: Создаёт новую подписку для пользователя и сервиса.
+      parameters:
+      - description: Данные для создания подписки
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.SubscriptionRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Подписка успешно создана
+          schema:
+            $ref: '#/definitions/dto.SubscriptionResponse'
+        "400":
+          description: Некорректный запрос
+          schema:
+            $ref: '#/definitions/httpext.FiberError'
+        "409":
+          description: Подписка уже существует
+          schema:
+            $ref: '#/definitions/httpext.FiberError'
+        "422":
+          description: Ошибка валидации
+          schema:
+            $ref: '#/definitions/httpext.FiberError'
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            $ref: '#/definitions/httpext.FiberError'
+      summary: Создать подписку
+      tags:
+      - subscriptions
+  /subscriptions/{id}:
+    delete:
+      description: Удаляет подписку по её идентификатору.
+      parameters:
+      - description: ID подписки
+        in: path
+        name: id
+        required: true
+        type: integer
+      responses:
+        "204":
+          description: Подписка успешно удалена
+        "400":
+          description: Некорректный запрос
+          schema:
+            $ref: '#/definitions/httpext.FiberError'
+        "404":
+          description: Подписка не найдена
+          schema:
+            $ref: '#/definitions/httpext.FiberError'
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            $ref: '#/definitions/httpext.FiberError'
+      summary: Удалить подписку
+      tags:
+      - subscriptions
+    get:
+      description: Возвращает данные подписки по её идентификатору.
+      parameters:
+      - description: ID подписки
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Данные подписки
+          schema:
+            $ref: '#/definitions/dto.SubscriptionResponse'
+        "400":
+          description: Некорректный идентификатор
+          schema:
+            $ref: '#/definitions/httpext.FiberError'
+        "404":
+          description: Подписка не найдена
+          schema:
+            $ref: '#/definitions/httpext.FiberError'
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            $ref: '#/definitions/httpext.FiberError'
+      summary: Получить подписку по ID
+      tags:
+      - subscriptions
+    put:
+      consumes:
+      - application/json
+      description: Обновляет данные существующей подписки по её идентификатору.
+      parameters:
+      - description: ID подписки
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Данные для обновления подписки
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.SubscriptionRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Подписка успешно обновлена
+          schema:
+            $ref: '#/definitions/dto.SubscriptionResponse'
+        "400":
+          description: Некорректный запрос
+          schema:
+            $ref: '#/definitions/httpext.FiberError'
+        "404":
+          description: Подписка не найдена
+          schema:
+            $ref: '#/definitions/httpext.FiberError'
+        "409":
+          description: Подписка уже существует
+          schema:
+            $ref: '#/definitions/httpext.FiberError'
+        "422":
+          description: Ошибка валидации
+          schema:
+            $ref: '#/definitions/httpext.FiberError'
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            $ref: '#/definitions/httpext.FiberError'
+      summary: Обновить подписку
+      tags:
+      - subscriptions
+swagger: "2.0"

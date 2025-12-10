@@ -31,8 +31,8 @@ func NewSubscriptionService(
 
 func (service *SubscriptionService) Create(
 	ctx context.Context,
-	req dto.SubscriptionDTO,
-) (*dto.SubscriptionDTO, error) {
+	req dto.SubscriptionRequest,
+) (*dto.SubscriptionResponse, error) {
 	if err := service.validate.Struct(req); err != nil {
 		return nil, err
 	}
@@ -52,9 +52,9 @@ func (service *SubscriptionService) Create(
 
 func (service *SubscriptionService) Update(
 	ctx context.Context,
-	req dto.SubscriptionDTO,
+	req dto.SubscriptionRequest,
 	id int,
-) (*dto.SubscriptionDTO, error) {
+) (*dto.SubscriptionResponse, error) {
 	if err := service.validate.Struct(req); err != nil {
 		return nil, err
 	}
@@ -97,7 +97,7 @@ func (service *SubscriptionService) Delete(ctx context.Context, id int) error {
 func (service *SubscriptionService) Index(
 	ctx context.Context,
 	id int,
-) (*dto.SubscriptionDTO, error) {
+) (*dto.SubscriptionResponse, error) {
 	sub, err := service.repo.FindByID(ctx, id)
 	if err != nil {
 		return nil, err
@@ -109,31 +109,36 @@ func (service *SubscriptionService) Index(
 func (service *SubscriptionService) List(
 	ctx context.Context,
 	filters dto.SubscriptionFilterDTO,
-) ([]*dto.SubscriptionDTO, int, error) {
+) (*dto.SubscriptionListResponse, error) {
 	f, err := service.mapFiltersToEntity(filters)
 	if err != nil {
-		return nil, 0, err
+		return nil, err
 	}
 
 	if err := service.validate.Struct(f); err != nil {
-		return nil, 0, err
+		return nil, err
 	}
 
 	subscriptions, err := service.repo.Find(ctx, f)
 	if err != nil {
-		return nil, 0, err
+		return nil, err
 	}
 
 	total, err := service.repo.Total(ctx, f)
 	if err != nil {
-		return nil, 0, err
+		return nil, err
 	}
 
-	return goext.Map(subscriptions, service.mapFromEntity), total, nil
+	return &dto.SubscriptionListResponse{
+		Page:  filters.Page,
+		Limit: filters.Limit,
+		Total: total,
+		Data:  goext.Map(subscriptions, service.mapFromEntity),
+	}, nil
 }
 
 func (service *SubscriptionService) mapToEntity(
-	sub dto.SubscriptionDTO,
+	sub dto.SubscriptionRequest,
 ) (*entity.Subscription, error) {
 	startDate, err := time.Parse(dateFormat, sub.StartDate)
 	if err != nil {
@@ -161,13 +166,13 @@ func (service *SubscriptionService) mapToEntity(
 
 func (service *SubscriptionService) mapFromEntity(
 	sub *entity.Subscription,
-) *dto.SubscriptionDTO {
+) *dto.SubscriptionResponse {
 	var endDate string
 	if sub.EndDate != nil {
 		endDate = sub.EndDate.Format(dateFormat)
 	}
 
-	return &dto.SubscriptionDTO{
+	return &dto.SubscriptionResponse{
 		ID:          sub.ID,
 		ServiceName: sub.ServiceName,
 		Price:       sub.Price,

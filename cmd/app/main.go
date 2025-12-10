@@ -11,8 +11,10 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/recover"
 	"github.com/jackc/pgx/v5/pgxpool"
+	_ "github.com/noredis/subscriptions/docs"
 	"github.com/noredis/subscriptions/internal/application/appservice"
 	"github.com/noredis/subscriptions/internal/common/config"
+	"github.com/noredis/subscriptions/internal/domain/service"
 	"github.com/noredis/subscriptions/internal/infrastructure/repository"
 	"github.com/noredis/subscriptions/internal/presentation/http/handlers"
 	"github.com/noredis/subscriptions/internal/presentation/http/middlewares"
@@ -21,6 +23,7 @@ import (
 	"github.com/noredis/subscriptions/pkg/validatorext"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
+	fiberSwagger "github.com/swaggo/fiber-swagger"
 )
 
 func main() {
@@ -85,9 +88,12 @@ func (app *App) Init() error {
 	subscriptionHandler.Register(app.fiberApp)
 	log.Printf("VALIDATOR BEFORE: %#v\n", validate)
 
-	costService := appservice.NewCostService(validate, subscriptionRepo)
+	calculator := service.NewCostCalculator()
+	costService := appservice.NewCostService(validate, subscriptionRepo, calculator)
 	costHandler := handlers.NewCostHandler(app.logger, costService)
 	costHandler.Register(app.fiberApp)
+
+	app.fiberApp.Get("/swagger/*", fiberSwagger.WrapHandler)
 
 	return nil
 }
